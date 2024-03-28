@@ -37,46 +37,41 @@ void draw_rect(struct bitmap* dst, i32 minx, i32 miny, i32 maxx, i32 maxy, u32 r
     }
 }
 
-void blit_bitmap(struct bitmap* dst, struct bitmap* src, struct render_rect* dst_rect, struct render_rect* src_rect)
+void blit_bitmap(struct bitmap* dst, struct bitmap* src, struct render_rect* src_rect, i32 posx, i32 posy)
 {
-    u32* pixel = (u32*)src->pixels;
+    
     for(u32 y = 0; y < src_rect->h; y++)
     {
+        u32* pixel = (u32*)src->pixels + (src_rect->y + y) * src->width + src_rect->x;
+        
         for(u32 x = 0; x < src_rect->w; x++)
         {
             draw_rect(dst,
-                      x + dst_rect->x,
-                      y + dst_rect->y,
-                      x + dst_rect->x + 1,
-                      y + dst_rect->y + 1,
-                      pixel[(src_rect->y + y) * src->width + (src_rect->x + x)]);
-        }
-    }
-}
-
-void blit_bitmap_scaled(struct bitmap* dst, struct bitmap* src, struct render_rect* dst_rect)
-{
-    f32 scaleX = (f32)dst_rect->w / (f32)src->width;
-    f32 scaleY = (f32)dst_rect->h / (f32)src->height;
-    
-    u32* pixel = (u32*)src->pixels;
-    for(u32 y = 0; y < src->height; y++)
-    {
-        for(u32 x = 0; x < src->width; x++)
-        {
-            f32 destX = dst_rect->x + (x * scaleX);
-            f32 destY = dst_rect->y + (y * scaleY);
-            
-            draw_rect(dst,
-                      destX,
-                      destY,
-                      destX + scaleX,
-                      destY + scaleY,
+                      x + posx,
+                      y + posy,
+                      x + posx + 1,
+                      y + posy + 1,
                       *pixel++);
         }
     }
 }
-
+void blit_bitmap_scaled(struct bitmap* dst, struct bitmap* src, struct render_rect* src_rect, i32 posx, i32 posy, f32 scalex, f32 scaley)
+{
+    for(u32 y = 0; y < src_rect->h; y++)
+    {
+        u32* pixel = (u32*)src->pixels + (src_rect->y + y) * src->width + src_rect->x;
+        
+        for(u32 x = 0; x < src_rect->w; x++)
+        {
+            draw_rect(dst,
+                      scalex*x + posx,
+                      scaley*y + posy,
+                      scalex*x + posx + scalex,
+                      scaley*y + posy + scaley,
+                      *pixel++);
+        }
+    }
+}
 
 //https://en.wikipedia.org/wiki/BMP_file_format
 #pragma pack(push, 1)

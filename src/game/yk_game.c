@@ -1,6 +1,13 @@
 #include <yk_renderer.h>
 #include <platform/yk_platform.h>
 
+internal u32 g_seed = 42;
+u32 lcg_rand()
+{
+    g_seed = 214013 * g_seed + 2531011;
+    return (g_seed >> 16);
+}
+
 struct Game
 {
     struct Arena arena;
@@ -32,83 +39,42 @@ YK_API void yk_innit_game(struct YkPlatform *platform, struct offscreen_buffer *
     {
         for (u32 j = 0; j < screen->width; j++)
         {
-            *pixel++ = 0xFF << 24 | rand() % 256 << 16 | rand() % 256 << 8 | rand() % 256;
+            *pixel++ = 0xFF << 24 | lcg_rand() % 256 << 16 | lcg_rand() % 256 << 8 | lcg_rand() % 256;
         }
     }
     
-    u8* file_data = platform->read_file("../res/spritesheet.bmp", &game->scratch);
+    u8* file_data = platform->read_file("../res/walker.bmp", &game->scratch);
     game->rabbit = make_bmp_from_file(file_data,&game->arena);
     
-    struct bitmap bmp = {0};
-    bmp.pixels = screen->pixels;
-    bmp.height = screen->height;
-    bmp.width = screen->width;
     
-    struct render_rect dst_rect = {0};
-    dst_rect.w = screen->width;
-    dst_rect.h = screen->height;
-    dst_rect.x = 0;
-    dst_rect.y = 0;
-    
-    struct render_rect src_rect = {0};
-    src_rect.w = game->rabbit.width/4;
-    src_rect.h = game->rabbit.height/3;
-    
-    for(u32 i = 0; i < 4; i ++)
-    {
-        for(u32 j = 0; j < 3; j ++)
-        {
-            src_rect.x = j*16;
-            src_rect.y = i*16;
-            
-            blit_bitmap(&bmp,&game->rabbit, &dst_rect, &src_rect);
-            dst_rect.x += 16;
-        }
-    }
 }
 
 YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscreen_buffer *screen, struct YkInput *input, f32 delta)
 {
+    
     struct Game* game = platform->memory;
     
-    local_persist f32 dirx = 0;
     if(yk_input_is_key_held(input,YK_ACTION_UP))
     {
-        dirx += delta * 50;
         platform->set_title(platform->_win,"gelato");
     }
-    
-    local_persist f32 timer = 0;
-    timer += delta;
-    
-    printl("%f",timer);
     
     struct bitmap bmp = {0};
     bmp.pixels = screen->pixels;
     bmp.height = screen->height;
     bmp.width = screen->width;
     
-    struct render_rect dst_rect = {0};
-    dst_rect.w = screen->width;
-    dst_rect.h = screen->height;
-    dst_rect.x = dirx;
-    dst_rect.y = 0;
+    draw_rect(&bmp,0,0,screen->width,screen->height,0xFF00FFFF);
     
     struct render_rect src_rect = {0};
     src_rect.w = game->rabbit.width/4;
-    src_rect.h = game->rabbit.height/3;
+    src_rect.h = game->rabbit.height;
     
-    for(u32 i = 0; i < 4; i ++)
-    {
-        for(u32 j = 0; j < 3; j ++)
-        {
-            src_rect.x = j*16;
-            src_rect.y = i*16;
-            
-            blit_bitmap(&bmp,&game->rabbit, &dst_rect, &src_rect);
-            dst_rect.x += 16;
-        }
-    }
+    local_persist f32 counter = 0;
+    counter += delta;
     
+    i32 posx = 0;
+    src_rect.x = ((i32)(counter*5.f)%4)*32;
+    blit_bitmap_scaled(&bmp,&game->rabbit, &src_rect,screen->width/2 - src_rect.w*10/2,screen->height/2 - src_rect.h*10/2,10,10);
     
 }
