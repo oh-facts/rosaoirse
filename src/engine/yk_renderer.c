@@ -1,5 +1,5 @@
 #include <yk_renderer.h>
-#include <stb_truetype.h>
+#include <stb/stb_truetype.h>
 
 /*
     :vomit:
@@ -37,25 +37,22 @@ void draw_rect(struct bitmap* dst, i32 minx, i32 miny, i32 maxx, i32 maxy, u32 r
     }
 }
 
-void blit_bitmap(struct bitmap* dst, struct bitmap* src, struct render_rect* dst_rect)
+void blit_bitmap(struct bitmap* dst, struct bitmap* src, struct render_rect* dst_rect, struct render_rect* src_rect)
 {
     u32* pixel = (u32*)src->pixels;
-    for(u32 y = 0; y < src->height; y++)
+    for(u32 y = 0; y < src_rect->h; y++)
     {
-        for(u32 x = 0; x < src->width; x++)
+        for(u32 x = 0; x < src_rect->w; x++)
         {
-            //u32 pixel = src->pixels[y * src->width + x];
-            
             draw_rect(dst,
                       x + dst_rect->x,
                       y + dst_rect->y,
-                      x + dst_rect->x+ 1,
-                      y+ dst_rect->y+ 1,
-                      *pixel ++);
+                      x + dst_rect->x + 1,
+                      y + dst_rect->y + 1,
+                      pixel[(src_rect->y + y) * src->width + (src_rect->x + x)]);
         }
     }
 }
-
 
 void blit_bitmap_scaled(struct bitmap* dst, struct bitmap* src, struct render_rect* dst_rect)
 {
@@ -101,7 +98,7 @@ struct BitmapHeader
 };
 #pragma pack(pop)
 
-struct bitmap make_bmp_from_file(char* file_data, struct Arena* arena)
+struct bitmap make_bmp_from_file(u8* file_data, struct Arena* arena)
 {
     u32 * out = 0;
     
@@ -133,7 +130,7 @@ struct bitmap make_bmp_from_file(char* file_data, struct Arena* arena)
     return result;
 }
 
-struct bitmap make_bmp_font(char* file_data, char codepoint,  struct Arena* arena)
+struct bitmap make_bmp_font(u8* file_data, char codepoint,  struct Arena* arena)
 {
     
     struct bitmap out = {0};
