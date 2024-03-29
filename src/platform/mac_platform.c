@@ -1,6 +1,6 @@
 // I don't own a mac
 #define YK_PLATFORM_DESKTOP
-#include <platform/yk_platform.h>
+#include <yk_platform.h>
 
 /*
 Must have

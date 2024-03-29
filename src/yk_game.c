@@ -1,5 +1,5 @@
 #include <yk_renderer.h>
-#include <platform/yk_platform.h>
+#include <yk_platform.h>
 
 internal u32 g_seed = 42;
 u32 lcg_rand()
@@ -46,25 +46,22 @@ YK_API void yk_innit_game(struct YkPlatform *platform, struct offscreen_buffer *
     u8* file_data = platform->read_file("../res/walker.bmp", &game->scratch);
     game->rabbit = make_bmp_from_file(file_data,&game->arena);
     
-    
 }
+
+#include <math.h>
 
 YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscreen_buffer *screen, struct YkInput *input, f32 delta)
 {
     
     struct Game* game = platform->memory;
     
-    if(yk_input_is_key_held(input,YK_ACTION_UP))
-    {
-        platform->set_title(platform->_win,"gelato");
-    }
     
     struct bitmap bmp = {0};
     bmp.pixels = screen->pixels;
     bmp.height = screen->height;
     bmp.width = screen->width;
     
-    draw_rect(&bmp,0,0,screen->width,screen->height,0xFF00FFFF);
+    draw_rect(&bmp,0,0,screen->width,screen->height,0xFFAA22FF);
     
     struct render_rect src_rect = {0};
     src_rect.w = game->rabbit.width/4;
@@ -73,8 +70,34 @@ YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscr
     local_persist f32 counter = 0;
     counter += delta;
     
-    i32 posx = 0;
     src_rect.x = ((i32)(counter*5.f)%4)*32;
     blit_bitmap_scaled(&bmp,&game->rabbit, &src_rect,screen->width/2 - src_rect.w*10/2,screen->height/2 - src_rect.h*10/2,10,10);
+    
+    local_persist f32 posx = 100;
+    local_persist f32 posy = 100;
+    local_persist f32 angle = 3.14 / 2;
+    
+    const f32 speed = 100 * delta;
+    const f32 tspeed = 3 * delta;
+    
+    if(yk_input_is_key_held(input,YK_KEY_W))
+    {
+        posy += speed*sin(angle);
+        posx += speed*cos(angle);
+    }
+    if(yk_input_is_key_held(input,YK_KEY_A))
+    {
+        angle -= tspeed;
+    }
+    if(yk_input_is_key_held(input,YK_KEY_D))
+    {
+        angle += tspeed;
+    }
+    
+    
+    i32 len = 40;
+    draw_line(&bmp, posx,posy, posx + len* cos(angle),posy + len*sin(angle), GREEN);
+    
+    //exit(32);
     
 }

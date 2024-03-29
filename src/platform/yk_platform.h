@@ -11,26 +11,33 @@ struct offscreen_buffer
     i32 height;
 };
 
-enum YK_ACTION
+enum YK_KEY
 {
-    YK_ACTION_HOLD_HANDS = 0,
-    YK_ACTION_UP,
-    YK_ACTION_DOWN,
-    YK_ACTION_LEFT,
-    YK_ACTION_RIGHT,
-    YK_ACTION_ACCEPT,
-    YK_ACTION_SAVE,
-    YK_ACTION_RESTORE,
+    YK_KEY_HOLD_HANDS = 0,
+    YK_KEY_UP,
+    YK_KEY_LEFT,
+    YK_KEY_RIGHT,
+    YK_KEY_DOWN,
+    YK_KEY_SPACE,
+    YK_KEY_W,
+    YK_KEY_A,
+    YK_KEY_S,
+    YK_KEY_D,
     
-    YK_ACTION_COUNT,
+    
+    YK_KEY_ACCEPT,
+    YK_KEY_SAVE,
+    YK_KEY_RESTORE,
+    
+    YK_KEY_COUNT,
 };
 
-typedef enum YK_ACTION YK_ACTION;
+typedef enum YK_KEY YK_KEY;
 
 struct YkInput
 {
-    b8 keys[YK_ACTION_COUNT];
-    b8 keys_old[YK_ACTION_COUNT];
+    b8 keys[YK_KEY_COUNT];
+    b8 keys_old[YK_KEY_COUNT];
 };
 
 struct YkPlatform
@@ -132,11 +139,7 @@ internal u8 *yk_read_binary_file(const char *filename, struct Arena *arena)
     FILE *file;
     fopen_s(&file, filename, "rb");
     
-    if (!file)
-    {
-        printf("Failed to open file %s", filename);
-        exit(3);
-    }
+    AssertM(file,"Failed to open file %s",filename);
     
     fseek(file, 0, SEEK_END);
     size_t fileSize = ftell(file);
@@ -146,10 +149,7 @@ internal u8 *yk_read_binary_file(const char *filename, struct Arena *arena)
     
     if (fread(buffer, 1, fileSize, file) != fileSize)
     {
-        perror("Failed to read file");
-        arena->used -= fileSize;
-        fclose(file);
-        return 0;
+        AssertM(0,"Failed to read file %s",filename);
     }
     
     fclose(file);

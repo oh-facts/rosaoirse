@@ -61,13 +61,17 @@ void blit_bitmap_scaled(struct bitmap* dst, struct bitmap* src, struct render_re
     {
         u32* pixel = (u32*)src->pixels + (src_rect->y + y) * src->width + src_rect->x;
         
+        i32 scaledy = scaley*y + posy;
+        
         for(u32 x = 0; x < src_rect->w; x++)
         {
+            i32 scaledx = scalex*x + posx;
+            
             draw_rect(dst,
-                      scalex*x + posx,
-                      scaley*y + posy,
-                      scalex*x + posx + scalex,
-                      scaley*y + posy + scaley,
+                      scaledx,
+                      scaledy,
+                      scaledx + scalex,
+                      scaledy + scaley,
                       *pixel++);
         }
     }
@@ -158,4 +162,60 @@ struct bitmap make_bmp_font(u8* file_data, char codepoint,  struct Arena* arena)
     
     stbtt_FreeBitmap(bmp, 0);
     return out;
+}
+
+void set_pixel(struct bitmap* dst, f32 x, f32 y, u32 color)
+{
+    i32 height = dst->height;
+    i32 width = dst->width;
+    
+    if(x > width || y > height || x <= 0 || y <= 0)
+    {
+        return;
+    }
+    
+    u32* pixel = dst->pixels;
+    pixel[(i32)y * width + (i32)x] = color;
+}
+
+#include <math.h>
+
+// wikipedia dda
+void draw_line(struct bitmap* dst, f32 x1, f32 y1, f32 x2, f32 y2, u32 color)
+{
+    f32 dx = x2 - x1;
+    f32 dy = y2 - y1;
+    
+    f32 step = fabsf(dx) >= fabsf(dy) ? fabsf(dx) : fabsf(dy);
+    
+    dx = dx/step;
+    dy = dy/step;
+    
+    f32 x = x1;
+    f32 y = y1;
+    
+    i32 i = 0;
+    
+    while( i <= step)
+    {
+        set_pixel(dst,x,y,color);
+#if 0
+        // I have lost my mind
+        // I think it would be better to render to a smaller bmp, then scale
+        // the bmp. This is pyscho.
+        set_pixel(dst,x + 1,y);
+        set_pixel(dst,x,y + 1);
+        set_pixel(dst,x - 1,y);
+        set_pixel(dst,x,y - 1);
+        set_pixel(dst,x + 1,y + 1);
+        set_pixel(dst,x - 1,y - 1);
+        set_pixel(dst,x + 1,y - 1);
+        set_pixel(dst,x - 1,y + 1);
+#endif
+        //printf("%f %f\n",x,y);
+        x += dx;
+        y +=dy;
+        i++;
+    }
+    
 }

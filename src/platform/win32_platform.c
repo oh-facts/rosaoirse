@@ -1,5 +1,5 @@
 #define YK_PLATFORM_DESKTOP
-#include <platform/yk_platform.h>
+#include <yk_platform.h>
 
 #include <Windows.h>
 #include <windowsx.h>
@@ -40,8 +40,9 @@ int main(int argc, char *argv[])
     
     struct win_state win_state = {0};
     
+    int titleBarHeight = GetSystemMetrics(SM_CYCAPTION);
     HWND win = CreateWindowA(wc.lpszClassName, "michaelsoft bindows", WS_OVERLAPPEDWINDOW,
-                             CW_USEDEFAULT, CW_USEDEFAULT, WIN_SIZE_X, WIN_SIZE_Y,
+                             CW_USEDEFAULT, CW_USEDEFAULT, WIN_SIZE_X, WIN_SIZE_Y  + titleBarHeight,
                              NULL, NULL, wc.hInstance, &win_state);
     
     AssertM(win, "Failed to create window");
@@ -105,7 +106,6 @@ int main(int argc, char *argv[])
     
     f64 total_time_elapsed = 0;
     f64 dt = 0;
-    
     while (win_state.is_running)
     {
         f64 last_time_elapsed = total_time_elapsed;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
         
         ReleaseDC(win, hdc);
         
-        for (u32 i = 0; i < YK_ACTION_COUNT; i++)
+        for (u32 i = 0; i < YK_KEY_COUNT; i++)
         {
             win_state.input.keys_old[i] = win_state.input.keys[i];
         }
@@ -282,34 +282,74 @@ internal LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
                     
                     // the standard arrow keys will always have their e0 bit set, but the
                     // corresponding keys on the NUMPAD will not.
-                    case VK_LEFT:
-                    if (!isE0)
-                        virtualKey = VK_NUMPAD4;
-                    break;
-                    
-                    case VK_RIGHT:
-                    if (!isE0)
-                        virtualKey = VK_NUMPAD6;
-                    break;
-                    
                     case VK_UP:
                     {
+                        // numpad up
                         if (!isE0)
                         {
                             virtualKey = VK_NUMPAD8;
                         }
+                        //arrow up
                         else
                         {
                             // printf("%d\n",!wasUp);
-                            state->input.keys[YK_ACTION_UP] = !wasUp;
+                            state->input.keys[YK_KEY_UP] = !wasUp;
                         }
-                    }
-                    break;
+                    }break;
                     
                     case VK_DOWN:
-                    if (!isE0)
-                        virtualKey = VK_NUMPAD2;
-                    break;
+                    {
+                        if (!isE0)
+                        {
+                            virtualKey = VK_NUMPAD2;
+                        }
+                        else
+                        {
+                            state->input.keys[YK_KEY_DOWN] = !wasUp;
+                        }
+                    }break;
+                    case VK_LEFT:
+                    {
+                        if (!isE0)
+                        {
+                            virtualKey = VK_NUMPAD4;
+                        }
+                        else
+                        {
+                            state->input.keys[YK_KEY_LEFT] = !wasUp;
+                        }
+                    }break;
+                    case VK_RIGHT:
+                    {
+                        if (!isE0)
+                        {
+                            virtualKey = VK_NUMPAD6;
+                        }
+                        else
+                        {
+                            state->input.keys[YK_KEY_RIGHT] = !wasUp;
+                        }
+                    }break;
+                    case 'W':
+                    {
+                        state->input.keys[YK_KEY_W] = !wasUp;
+                    }break;
+                    case 'A':
+                    {
+                        state->input.keys[YK_KEY_A] = !wasUp;
+                    }break;
+                    case 'S':
+                    {
+                        state->input.keys[YK_KEY_S] = !wasUp;
+                    }break;
+                    case 'D':
+                    {
+                        state->input.keys[YK_KEY_D] = !wasUp;
+                    }break;
+                    case 'Q':
+                    {
+                        exit(1);
+                    }break;
                     
                     // NUMPAD 5 doesn't have its e0 bit set
                     case VK_CLEAR:
