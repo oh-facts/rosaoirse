@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     
     int titleBarHeight = GetSystemMetrics(SM_CYCAPTION);
     HWND win = CreateWindowA(wc.lpszClassName, "michaelsoft bindows", WS_OVERLAPPEDWINDOW,
-                             CW_USEDEFAULT, CW_USEDEFAULT, WIN_SIZE_X, WIN_SIZE_Y  + titleBarHeight,
+                             CW_USEDEFAULT, CW_USEDEFAULT, WIN_SIZE_X, WIN_SIZE_Y,
                              NULL, NULL, wc.hInstance, &win_state);
     
     AssertM(win, "Failed to create window");
@@ -86,9 +86,9 @@ int main(int argc, char *argv[])
     platform.read_file = yk_read_binary_file;
     
     struct offscreen_buffer render_target = {0};
-    render_target.height = 600;
-    render_target.width = 800;
-    render_target.pixels = malloc(sizeof(u32) * 800 * 600);
+    render_target.height = WIN_SIZE_Y;
+    render_target.width = WIN_SIZE_X;
+    render_target.pixels = malloc(sizeof(u32) * render_target.height * render_target.width);
     
     HMODULE dll = LoadLibraryA("yk3.dll");
     AssertM(dll,"failed to load dll yk3.dll");
@@ -125,13 +125,13 @@ int main(int argc, char *argv[])
         HDC hdc = GetDC(win);
         BITMAPINFO bmi = {0};
         bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = 800;
-        bmi.bmiHeader.biHeight = -600;
+        bmi.bmiHeader.biWidth = render_target.width;
+        bmi.bmiHeader.biHeight = -render_target.height;
         bmi.bmiHeader.biPlanes = 1;
         bmi.bmiHeader.biBitCount = 32; 
         bmi.bmiHeader.biCompression = BI_RGB;
         
-        StretchDIBits(hdc, 0, 0, 800, 600, 0, 0, 800, 600, render_target.pixels, &bmi, DIB_RGB_COLORS, SRCCOPY);
+        StretchDIBits(hdc, 0, 0, render_target.width,render_target.height , 0, 0, render_target.width, render_target.height, render_target.pixels, &bmi, DIB_RGB_COLORS, SRCCOPY);
         
         ReleaseDC(win, hdc);
         
@@ -151,6 +151,7 @@ int main(int argc, char *argv[])
         // sleeping to limit cycles
         local_persist f32 counter = 0;
         counter += dt;
+        
         
         if (counter <= 1.0 / 60)
         {

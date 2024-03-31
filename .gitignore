@@ -17,3 +17,4 @@ res/
 # misc
 compile_commands.json
 CMakeSettings.json
+snapshots/

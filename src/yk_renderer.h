@@ -36,4 +36,5 @@ struct bitmap make_bmp_font(u8* file_data, char codepoint,  struct Arena* arena)
 
 void draw_line(struct bitmap* dst, f32 x1, f32 y1, f32 x2, f32 y2, u32 color);
 
+void set_pixel(struct bitmap* dst, f32 x, f32 y, u32 color);
 #endif //YK_RENDERER_H
