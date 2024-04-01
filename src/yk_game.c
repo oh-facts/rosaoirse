@@ -74,7 +74,7 @@ YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscr
     local_persist f32 dirx, diry;
     local_persist f32 angle = 0;
     local_persist f32 tspeed;
-    tspeed = 0.5f * delta;
+    tspeed = 2.f * delta;
 
     dirx = cos(angle);
     diry = sin(angle);
@@ -83,6 +83,11 @@ YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscr
     {
         posx += speed * dirx;
         posy += speed * diry;
+    }
+    if (yk_input_is_key_held(input, YK_KEY_S))
+    {
+        posx -= speed * dirx;
+        posy -= speed * diry;
     }
     if (yk_input_is_key_held(input, YK_KEY_A))
     {
@@ -123,32 +128,48 @@ YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscr
     }
     if (yk_input_is_key_held(input, YK_KEY_DOWN))
     {
+        {
 
-        f32 x1 = 250 - posx;
-        f32 y1 = 120 - posy;
-        f32 x2 = 250 - posx;
-        f32 y2 = 180 - posy;
+            f32 x1 = 250 - posx;
+            f32 y1 = 120 - posy;
+            f32 x2 = 250 - posx;
+            f32 y2 = 180 - posy;
+            f32 z = 5;
 
-        f32 tz1 = x1 * cos(angle) + y1 * sin(angle);
-        f32 tz2 = x2 * cos(angle) + y2 * sin(angle);
+            f32 tz1 = x1 * cos(angle) + y1 * sin(angle);
+            f32 tz2 = x2 * cos(angle) + y2 * sin(angle);
 
-        f32 tx1 = x1 * sin(angle) - y1 * cos(angle);
-        f32 tx2 = x2 * sin(angle) - y2 * cos(angle);
+            if (tz1 < 0 && tz2 < 0)
+            {
+                goto ae;
+            }
+            if (tz1 < 0)
+            {
+                // clip
+            }
+            else if( tz2 < 0)
+            {
+                // clip
+            }
 
-        x1 = -tx1 * 16 / tz1;
-        f32 y1a = -Y_2 / tz1;
-        f32 y1b = Y_2 / tz1;
+            f32 tx1 = x1 * sin(angle) - y1 * cos(angle);
+            f32 tx2 = x2 * sin(angle) - y2 * cos(angle);
 
-        x2 = -tx2 * 16 / tz2;
-        f32 y2a = -Y_2 / tz2;
-        f32 y2b = Y_2 / tz2;
+            x1 = -tx1 * 100 / tz1;
+            f32 y1a = -Y_2 / tz1;
+            f32 y1b = z * Y_2 / tz1;
 
-        draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x2, Y_2 + y2a, RED);
-        draw_line(&game->display, W_2 + x1, Y_2 + y1b, W_2 + x2, Y_2 + y2b, GREEN);
-        draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x1, Y_2 + y1b, BLUE);
-        draw_line(&game->display, W_2 + x2, Y_2 + y2a, W_2 + x2, Y_2 + y2b, BLACK);
+            x2 = -tx2 * 100 / tz2;
+            f32 y2a = -Y_2 / tz2;
+            f32 y2b = z * Y_2 / tz2;
+
+            draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x2, Y_2 + y2a, RED);
+            draw_line(&game->display, W_2 + x1, Y_2 + y1b, W_2 + x2, Y_2 + y2b, GREEN);
+            draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x1, Y_2 + y1b, BLUE);
+            draw_line(&game->display, W_2 + x2, Y_2 + y2a, W_2 + x2, Y_2 + y2b, BLACK);
+        }
     }
-
+ae:
     struct bitmap bmp = {0};
     bmp.pixels = screen->pixels;
     bmp.height = screen->height;
