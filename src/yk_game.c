@@ -29,11 +29,103 @@ internal b8 yk_input_is_key_held(struct YkInput *state, u32 key)
 }
 
 #include <math.h>
-#define MAP_SIZE (8)
-#define TILE_SIZE (8)
+#define MAP_SIZE (3)
+
+u32 map[MAP_SIZE * MAP_SIZE * MAP_SIZE];
+
+typedef struct v3
+{
+    f32 x, y, z;
+} v3;
+
+typedef struct v2
+{
+    f32 x, y;
+} v2;
+
+typedef struct v3i
+{
+    i32 x, y, z;
+} v3i;
+
+inline v3 v3_x_s(v3 a, f32 b)
+{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+
+    return a;
+}
+
+inline v3 v3_mul_v3(v3 a, v3 b)
+{
+    return (v3){a.x * b.x, a.y * b.y, a.z * b.z};
+}
+
+inline v3 v3_add_v3(v3 a, v3 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+
+    return a;
+}
+
+inline v3 v3_sub_v3(v3 a, v3 b)
+{
+    return (v3){a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+inline f32 length(v3 a)
+{
+    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+}
+
+inline v3 v3_abs(v3 a)
+{
+    return (v3){fabsf(a.x), fabsf(a.y), fabsf(a.z)};
+}
+
+inline v3 f32_to_v3(f32 a)
+{
+    return (v3){a, a, a};
+}
+
+inline v3 v3_comp_div(v3 a, v3 b)
+{
+    return (v3){a.x / b.x, a.y / b.y, a.z / b.z};
+}
+
+inline v3 v3_sign(v3 a)
+{
+    return (v3){(a.x > 0) - (a.x < 0), (a.y > 0) - (a.y < 0), (a.z > 0) - (a.z < 0)};
+}
+
+inline v3i v3_to_v3i(v3 a)
+{
+    return (v3i){a.x, a.y, a.z};
+}
+
+inline v3 v3i_to_v3(v3i a)
+{
+    return (v3){a.x, a.y, a.z};
+}
+
+inline v3 v3_mul_f(v3 a, f32 b)
+{
+    return (v3){a.x * b, a.y * b, a.z * b};
+}
+
+inline v3 v3_add_f(v3 a, f32 b)
+{
+    return (v3){a.x + b, a.y + b, a.z + b};
+}
 
 YK_API void yk_innit_game(struct YkPlatform *platform, struct offscreen_buffer *screen)
 {
+    v3 a;
+    a.x = 2;
+
     struct Game *game = platform->memory;
 
     arena_innit(&game->arena, platform->mem_size - sizeof(struct Game), (u8 *)platform->memory + sizeof(struct Game));
@@ -51,12 +143,29 @@ YK_API void yk_innit_game(struct YkPlatform *platform, struct offscreen_buffer *
     u8 *file_data = platform->read_file("../res/walker.bmp", &game->scratch);
     game->rabbit = make_bmp_from_file(file_data, &game->arena);
 
+    for (i32 x = 0; x < MAP_SIZE; x++)
+    {
+        for (i32 y = 0; y < MAP_SIZE; y++)
+        {
+            for (i32 z = 0; z < MAP_SIZE; z++)
+            {
+                map[x + y * MAP_SIZE + z * MAP_SIZE * MAP_SIZE] = rand()%2;
+            }
+        }
+    }
+
     game->display.width = 400;
     game->display.height = 300;
     game->display.pixels = push_array(&game->arena,
                                       u32, game->display.width * game->display.height);
 }
 
+i32 getVoxel(v3i pos)
+{
+    return map[pos.x + pos.y * MAP_SIZE + pos.z * MAP_SIZE * MAP_SIZE];
+}
+
+const int MAX_RAY_STEPS = 50;
 YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscreen_buffer *screen, struct YkInput *input, f32 delta)
 {
     struct Game *game = (struct Game *)platform->memory;
@@ -76,100 +185,99 @@ YK_API void yk_update_and_render_game(struct YkPlatform *platform, struct offscr
     local_persist f32 tspeed;
     tspeed = 2.f * delta;
 
-    dirx = cos(angle);
-    diry = sin(angle);
+    v3 camDir = {0, 0, -1.f};
 
-    if (yk_input_is_key_held(input, YK_KEY_W))
+    for (i32 i = 0, h = game->display.height; i < h; i++)
     {
-        posx += speed * dirx;
-        posy += speed * diry;
-    }
-    if (yk_input_is_key_held(input, YK_KEY_S))
-    {
-        posx -= speed * dirx;
-        posy -= speed * diry;
-    }
-    if (yk_input_is_key_held(input, YK_KEY_A))
-    {
-        angle -= tspeed;
-    }
-    if (yk_input_is_key_held(input, YK_KEY_D))
-    {
-        angle += tspeed;
-    }
-
-    if (yk_input_is_key_held(input, YK_KEY_RIGHT))
-    {
-        f32 x1 = 250;
-        f32 y1 = 120;
-        f32 x2 = 250;
-        f32 y2 = 180;
-
-        draw_line(&game->display, x1, y1, x2, y2, GREEN);
-        // player
-        draw_line(&game->display, posx, posy, posx + dirx * 5, posy + diry * 5, WHITE);
-    }
-    if (yk_input_is_key_held(input, YK_KEY_LEFT))
-    {
-        f32 x1 = 250 - posx;
-        f32 y1 = 120 - posy;
-        f32 x2 = 250 - posx;
-        f32 y2 = 180 - posy;
-
-        f32 tz1 = x1 * cos(angle) + y1 * sin(angle);
-        f32 tz2 = x2 * cos(angle) + y2 * sin(angle);
-
-        f32 tx1 = x1 * sin(angle) - y1 * cos(angle);
-        f32 tx2 = x2 * sin(angle) - y2 * cos(angle);
-
-        draw_line(&game->display, W_2 - tx1, Y_2 - tz1, W_2 - tx2, Y_2 - tz2, GREEN);
-        // player
-        draw_line(&game->display, W_2, Y_2, W_2, Y_2 + 5, WHITE);
-    }
-    if (yk_input_is_key_held(input, YK_KEY_DOWN))
-    {
+        for (i32 j = 0, w = game->display.width; j < w; j++)
         {
+            v3 camPlaneU = {1, 0, 0};
+            v3 camPlaneV = {0, h * 1.f / w, 0};
 
-            f32 x1 = 250 - posx;
-            f32 y1 = 120 - posy;
-            f32 x2 = 250 - posx;
-            f32 y2 = 180 - posy;
-            f32 z = 5;
+            v2 screenPos = {2 * j / w - 1, 2 * i / h - 1};
 
-            f32 tz1 = x1 * cos(angle) + y1 * sin(angle);
-            f32 tz2 = x2 * cos(angle) + y2 * sin(angle);
+            // v3 rayDir = camDir + screenPos.x * camPlaneU + screenPos.y * camPlaneV;
+            v3 rayDir = {0};
+            {
+                v3 temp = v3_x_s(camPlaneU, screenPos.x);
+                v3 temp2 = v3_x_s(camPlaneV, screenPos.y);
 
-            if (tz1 < 0 && tz2 < 0)
-            {
-                goto ae;
-            }
-            if (tz1 < 0)
-            {
-                // clip
-            }
-            else if( tz2 < 0)
-            {
-                // clip
+                // camPlaneU.x *= screenPos.x;
+                v3 temp3 = v3_add_v3(temp, temp2);
+                rayDir = v3_add_v3(temp3, camDir);
             }
 
-            f32 tx1 = x1 * sin(angle) - y1 * cos(angle);
-            f32 tx2 = x2 * sin(angle) - y2 * cos(angle);
+            v3 rayPos = {0, 0, -5};
+            v3i mapPos = v3_to_v3i(rayPos);
+            v3 deltaDist = v3_abs(v3_comp_div(f32_to_v3(length(rayDir)), rayDir));
 
-            x1 = -tx1 * 100 / tz1;
-            f32 y1a = -Y_2 / tz1;
-            f32 y1b = z * Y_2 / tz1;
+            v3i rayStep = v3_to_v3i(v3_sign(rayDir));
+            v3 sideDist;
 
-            x2 = -tx2 * 100 / tz2;
-            f32 y2a = -Y_2 / tz2;
-            f32 y2b = z * Y_2 / tz2;
+            {
+                v3 temp1 = v3_mul_v3(v3_sign(rayDir), v3_sub_v3(v3i_to_v3(mapPos), rayPos));
+                v3 temp2 = v3_mul_f(v3_sign(rayDir), 0.5);
+                v3 temp3 = v3_add_v3(temp1, temp2);
+                v3 temp4 = v3_add_f(temp3,0.5f);
+                sideDist = v3_mul_v3(temp4, deltaDist);
+            }
 
-            draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x2, Y_2 + y2a, RED);
-            draw_line(&game->display, W_2 + x1, Y_2 + y1b, W_2 + x2, Y_2 + y2b, GREEN);
-            draw_line(&game->display, W_2 + x1, Y_2 + y1a, W_2 + x1, Y_2 + y1b, BLUE);
-            draw_line(&game->display, W_2 + x2, Y_2 + y2a, W_2 + x2, Y_2 + y2b, BLACK);
+            v3i mask = {0};
+
+            for (int i = 0; i < MAX_RAY_STEPS; i++)
+            {
+                if (getVoxel(mapPos))
+                    break;
+
+                if (sideDist.x < sideDist.y)
+                {
+                    if (sideDist.x < sideDist.z)
+                    {
+                        sideDist.x += deltaDist.x;
+                        mapPos.x += rayStep.x;
+                        mask = (v3i){true, false, false};
+                    }
+                    else
+                    {
+                        sideDist.z += deltaDist.z;
+                        mapPos.z += rayStep.z;
+                        mask = (v3i){false, false, true};
+                    }
+                }
+                else
+                {
+                    if (sideDist.y < sideDist.z)
+                    {
+                        sideDist.y += deltaDist.y;
+                        mapPos.y += rayStep.y;
+                        mask = (v3i){false, true, false};
+                    }
+                    else
+                    {
+                        sideDist.z += deltaDist.z;
+                        mapPos.z += rayStep.z;
+                        mask = (v3i){false, false, true};
+                    }
+                }
+            }
+
+            u32 color = 0;
+            if (mask.x)
+            {
+                color = RED;
+            }
+            if (mask.y)
+            {
+                color = BLUE;
+            }
+            if (mask.z)
+            {
+                color = GREEN;
+            }
+
+            ((u32 *)game->display.pixels)[i * w + j] = color;
         }
     }
-ae:
     struct bitmap bmp = {0};
     bmp.pixels = screen->pixels;
     bmp.height = screen->height;
